@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from softmax import softmax
 
+def relu(a):
+  a[a<0] = 0
+  return a
 
 class TwoLayerNet(object):
   """
@@ -68,46 +72,45 @@ class TwoLayerNet(object):
     N, D = X.shape
 
     # Compute the forward pass
-    scores = None
-    #############################################################################
-    # TODO: Perform the forward pass, computing the class scores for the input. #
-    # Store the result in the scores variable, which should be an array of      #
-    # shape (N, C).                                                             #
-    #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
-    
+    a1 = np.dot(X, W1)
+    a2 = relu(a1 + b1)
+    scores = np.dot(a2, W2) + b2
+
     # If the targets are not given then jump out, we're done
     if y is None:
       return scores
 
     # Compute the loss
-    loss = None
-    #############################################################################
-    # TODO: Finish the forward pass, and compute the loss. This should include  #
-    # both the data loss and L2 regularization for W1 and W2. Store the result  #
-    # in the variable loss, which should be a scalar. Use the Softmax           #
-    # classifier loss. So that your results match ours, multiply the            #
-    # regularization loss by 0.5                                                #
-    #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
+    probs = softmax(scores)
+    loss = -np.sum(np.log(probs[np.arange(N), y]))
+    loss /= N
 
-    # Backward pass: compute gradients
     grads = {}
-    #############################################################################
-    # TODO: Compute the backward pass, computing the derivatives of the weights #
-    # and biases. Store the results in the grads dictionary. For example,       #
-    # grads['W1'] should store the gradient on W1, and be a matrix of same size #
-    #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
+    # see http://cs231n.github.io/neural-networks-case-study/
+    probs[np.arange(N), y] -= 1
+
+    dW2 = np.dot(a2.T, probs)
+    dW2 /= N
+
+    dB2 = np.sum(probs, axis=0)
+    dB2 /= N
+
+    dW1 = np.dot(X.T, np.dot(probs, W2.T) * (a1 > 0))
+    dW1 /= N
+
+    dB1 = np.sum(np.dot(probs, W2.T) * (a1 > 0), axis=0)
+    dB1 /= N
+
+    dW2 += reg * W2
+    dW1 += reg * W1
+
+    grads['W2'] = dW2
+    grads['W1'] = dW1
+    grads['b2'] = dB2
+    grads['b1'] = dB1
+
+    loss += 0.5 * reg * np.sum(W1 * W1)
+    loss += 0.5 * reg * np.sum(W2 * W2)
 
     return loss, grads
 
@@ -141,32 +144,18 @@ class TwoLayerNet(object):
     val_acc_history = []
 
     for it in xrange(num_iters):
-      X_batch = None
-      y_batch = None
-
-      #########################################################################
-      # TODO: Create a random minibatch of training data and labels, storing  #
-      # them in X_batch and y_batch respectively.                             #
-      #########################################################################
-      pass
-      #########################################################################
-      #                             END OF YOUR CODE                          #
-      #########################################################################
+      idx = np.random.choice(num_train, batch_size)
+      X_batch = X[idx]
+      y_batch = y[idx]
 
       # Compute loss and gradients using the current minibatch
       loss, grads = self.loss(X_batch, y=y_batch, reg=reg)
       loss_history.append(loss)
 
-      #########################################################################
-      # TODO: Use the gradients in the grads dictionary to update the         #
-      # parameters of the network (stored in the dictionary self.params)      #
-      # using stochastic gradient descent. You'll need to use the gradients   #
-      # stored in the grads dictionary defined above.                         #
-      #########################################################################
-      pass
-      #########################################################################
-      #                             END OF YOUR CODE                          #
-      #########################################################################
+      self.params['W1'] -= learning_rate * grads['W1']
+      self.params['W2'] -= learning_rate * grads['W2']
+      self.params['b1'] -= learning_rate * grads['b1']
+      self.params['b2'] -= learning_rate * grads['b2']
 
       if verbose and it % 100 == 0:
         print 'iteration %d / %d: loss %f' % (it, num_iters, loss)
@@ -203,16 +192,12 @@ class TwoLayerNet(object):
       the elements of X. For all i, y_pred[i] = c means that X[i] is predicted
       to have class c, where 0 <= c < C.
     """
-    y_pred = None
+    a1 = np.dot(X, self.params['W1'])
+    a2 = relu(a1 + self.params['b1'])
+    scores = np.dot(a2, self.params['W2']) + self.params['b2']
 
-    ###########################################################################
-    # TODO: Implement this function; it should be VERY simple!                #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                              END OF YOUR CODE                           #
-    ###########################################################################
-
+    probs = softmax(scores)
+    y_pred = np.argmax(probs, axis=1)
     return y_pred
 
 

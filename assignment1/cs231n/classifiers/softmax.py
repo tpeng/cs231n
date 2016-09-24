@@ -68,6 +68,7 @@ def softmax_loss_vectorized(W, X, y, reg):
 
   probs = softmax(np.dot(X, W))
   loss -= np.sum(np.log(probs[np.arange(num_train), y]))
+  # see http://cs231n.github.io/neural-networks-case-study/
   probs[np.arange(num_train), y] -= 1
   dW += np.dot(X.T, probs)
 
