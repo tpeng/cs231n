@@ -3,6 +3,14 @@ import numpy as np
 from cs231n.layers import *
 from cs231n.layer_utils import *
 
+def softmax(l):
+  if len(l.shape) == 1:
+    l -= l.max()
+    return np.exp(l) / np.sum(np.exp(l))
+  else:
+    l -= np.max(l, axis=1)[:, np.newaxis]
+    return np.exp(l) / np.sum(np.exp(l), axis=1)[:, np.newaxis]
+
 
 class TwoLayerNet(object):
   """
@@ -45,11 +53,10 @@ class TwoLayerNet(object):
     # weights and biases using the keys 'W1' and 'b1' and second layer weights #
     # and biases using the keys 'W2' and 'b2'.                                 #
     ############################################################################
-    pass
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
-
+    self.params['W1'] = np.random.normal(0, weight_scale, hidden_dim *input_dim).reshape(hidden_dim, input_dim)
+    self.params['W2'] = np.random.normal(0, weight_scale, num_classes *hidden_dim).reshape(num_classes, hidden_dim)
+    self.params['b1'] = np.zeros(hidden_dim)
+    self.params['b2'] = np.zeros(num_classes)
 
   def loss(self, X, y=None):
     """
@@ -70,35 +77,48 @@ class TwoLayerNet(object):
     - grads: Dictionary with the same keys as self.params, mapping parameter
       names to gradients of the loss with respect to those parameters.
     """  
-    scores = None
-    ############################################################################
-    # TODO: Implement the forward pass for the two-layer net, computing the    #
-    # class scores for X and storing them in the scores variable.              #
-    ############################################################################
-    pass
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
+    W1 = self.params['W1']
+    W2 = self.params['W2']
+    b1 = self.params['b1']
+    b2 = self.params['b2']
+    num_train = X.shape[0]
+
+    a2_out, a2_cache = affine_relu_forward(X, W1, b1)
+    scores = np.dot(a2_out, W2) + b2
 
     # If y is None then we are in test mode so just return scores
     if y is None:
       return scores
-    
-    loss, grads = 0, {}
-    ############################################################################
-    # TODO: Implement the backward pass for the two-layer net. Store the loss  #
-    # in the loss variable and gradients in the grads dictionary. Compute data #
-    # loss using softmax, and make sure that grads[k] holds the gradients for  #
-    # self.params[k]. Don't forget to add L2 regularization!                   #
-    #                                                                          #
-    # NOTE: To ensure that your implementation matches ours and you pass the   #
-    # automated tests, make sure that your L2 regularization includes a factor #
-    # of 0.5 to simplify the expression for the gradient.                      #
-    ############################################################################
-    pass
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
+
+    probs = softmax(scores)
+    loss, grads = -np.sum(np.log(probs[np.arange(num_train), y])), {}
+    loss /= num_train
+
+    loss += 0.5 * self.reg * np.sum(W1 * W1)
+    loss += 0.5 * self.reg * np.sum(W2 * W2)
+
+    # see http://cs231n.github.io/neural-networks-case-study/
+    probs[np.arange(num_train), y] -= 1
+
+    dW2 = np.dot(a2_out.T, probs)
+    dW2 /= num_train
+
+    dB2 = np.sum(probs, axis=0)
+    dB2 /= num_train
+
+    dW2 += self.reg * W2
+
+    # XXX(tpeng): np.dot(probs, W2.T)?
+    dX, dW1, dB1 = affine_relu_backward(np.dot(probs, W2.T), a2_cache)
+    dW1 /= num_train
+    dB1 /= num_train
+
+    dW1 += self.reg * W1
+
+    grads['W1'] = dW1
+    grads['W2'] = dW2
+    grads['b1'] = dB1
+    grads['b2'] = dB2
 
     return loss, grads
 
