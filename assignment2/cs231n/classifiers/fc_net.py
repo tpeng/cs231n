@@ -98,21 +98,15 @@ class TwoLayerNet(object):
     loss += 0.5 * self.reg * np.sum(W2 * W2)
 
     # see http://cs231n.github.io/neural-networks-case-study/
+    # probs is the dX, X is w2 * relu(w1x + b1) + b2
     probs[np.arange(num_train), y] -= 1
+    probs /= num_train
 
     dW2 = np.dot(a2_out.T, probs)
-    dW2 /= num_train
-
-    dB2 = np.sum(probs, axis=0)
-    dB2 /= num_train
-
     dW2 += self.reg * W2
+    dB2 = np.sum(probs, axis=0)
 
-    # XXX(tpeng): np.dot(probs, W2.T)?
     dX, dW1, dB1 = affine_relu_backward(np.dot(probs, W2.T), a2_cache)
-    dW1 /= num_train
-    dB1 /= num_train
-
     dW1 += self.reg * W1
 
     grads['W1'] = dW1
