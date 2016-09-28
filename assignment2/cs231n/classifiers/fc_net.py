@@ -45,16 +45,8 @@ class TwoLayerNet(object):
     self.params = {}
     self.reg = reg
     
-    ############################################################################
-    # TODO: Initialize the weights and biases of the two-layer net. Weights    #
-    # should be initialized from a Gaussian with standard deviation equal to   #
-    # weight_scale, and biases should be initialized to zero. All weights and  #
-    # biases should be stored in the dictionary self.params, with first layer  #
-    # weights and biases using the keys 'W1' and 'b1' and second layer weights #
-    # and biases using the keys 'W2' and 'b2'.                                 #
-    ############################################################################
-    self.params['W1'] = np.random.normal(0, weight_scale, hidden_dim *input_dim).reshape(hidden_dim, input_dim)
-    self.params['W2'] = np.random.normal(0, weight_scale, num_classes *hidden_dim).reshape(num_classes, hidden_dim)
+    self.params['W1'] = np.random.normal(0, weight_scale, input_dim * hidden_dim).reshape(input_dim, hidden_dim)
+    self.params['W2'] = np.random.normal(0, weight_scale, hidden_dim * num_classes).reshape(hidden_dim, num_classes)
     self.params['b1'] = np.zeros(hidden_dim)
     self.params['b2'] = np.zeros(num_classes)
 
@@ -81,7 +73,6 @@ class TwoLayerNet(object):
     W2 = self.params['W2']
     b1 = self.params['b1']
     b2 = self.params['b2']
-    num_train = X.shape[0]
 
     a2_out, a2_cache = affine_relu_forward(X, W1, b1)
     scores = np.dot(a2_out, W2) + b2
@@ -90,25 +81,18 @@ class TwoLayerNet(object):
     if y is None:
       return scores
 
-    probs = softmax(scores)
-    loss, grads = -np.sum(np.log(probs[np.arange(num_train), y])), {}
-    loss /= num_train
-
+    loss, dout = softmax_loss(scores, y)
     loss += 0.5 * self.reg * np.sum(W1 * W1)
     loss += 0.5 * self.reg * np.sum(W2 * W2)
 
-    # see http://cs231n.github.io/neural-networks-case-study/
-    # probs is the dX, X is w2 * relu(w1x + b1) + b2
-    probs[np.arange(num_train), y] -= 1
-    probs /= num_train
-
-    dW2 = np.dot(a2_out.T, probs)
+    dW2 = np.dot(a2_out.T, dout)
     dW2 += self.reg * W2
-    dB2 = np.sum(probs, axis=0)
+    dB2 = np.sum(dout, axis=0)
 
-    dX, dW1, dB1 = affine_relu_backward(np.dot(probs, W2.T), a2_cache)
+    dX, dW1, dB1 = affine_relu_backward(np.dot(dout, W2.T), a2_cache)
     dW1 += self.reg * W1
 
+    grads = {}
     grads['W1'] = dW1
     grads['W2'] = dW2
     grads['b1'] = dB1
