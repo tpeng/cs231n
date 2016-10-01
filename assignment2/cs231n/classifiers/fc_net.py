@@ -272,4 +272,10 @@ class FullyConnectedNet(object):
       dout, _dw, _db = affine_relu_backward(dout, self.cache[idx])
       grads['W%d' % idx] = _dw
       grads['b%d' % idx] = _db
+
+    for idx in range(self.num_layers, 0, -1):
+      w = self.params['W%s' % idx]
+      loss += 0.5 * self.reg * np.sum(w * w)
+      grads['W%s' % idx] += self.reg * w
+
     return loss, grads
