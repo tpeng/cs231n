@@ -265,16 +265,11 @@ class FullyConnectedNet(object):
     grads['W%s' % self.num_layers] = np.dot(_input.T, dout)
     grads['b%s' % self.num_layers] = np.sum(dout, axis=0)
 
-    # dout = np.dot(dout, self.params['W%d' % self.num_layers].T)
-    # _dx, _dw, _db = affine_backward(dout, cache)
-
-    # grads['W%s' % (self.num_layers-1)] = _dw
-    # grads['b%s' % (self.num_layers-1)] = _db
-
+    # get the dx right before the last affine layer
+    dout = np.dot(dout, self.params['W%d' % self.num_layers].T)
     for idx in range(self.num_layers-1, 0, -1):
       next_layer_idx = idx + 1
-      dout = np.dot(dout, self.params['W%d' % next_layer_idx].T)
-      _dx, _dw, _db = affine_relu_backward(dout, self.cache[idx])
+      dout, _dw, _db = affine_relu_backward(dout, self.cache[idx])
       grads['W%d' % idx] = _dw
       grads['b%d' % idx] = _db
     return loss, grads
