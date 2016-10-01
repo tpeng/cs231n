@@ -75,8 +75,8 @@ class TwoLayerNet(object):
     b1 = self.params['b1']
     b2 = self.params['b2']
 
-    a2_out, a2_cache = affine_relu_forward(X, W1, b1)
-    scores = np.dot(a2_out, W2) + b2
+    a1_out, a1_cache = affine_relu_forward(X, W1, b1)
+    scores = np.dot(a1_out, W2) + b2
 
     # If y is None then we are in test mode so just return scores
     if y is None:
@@ -86,11 +86,11 @@ class TwoLayerNet(object):
     loss += 0.5 * self.reg * np.sum(W1 * W1)
     loss += 0.5 * self.reg * np.sum(W2 * W2)
 
-    dW2 = np.dot(a2_out.T, dout)
+    dW2 = np.dot(a1_out.T, dout)
     dW2 += self.reg * W2
     dB2 = np.sum(dout, axis=0)
 
-    dX, dW1, dB1 = affine_relu_backward(np.dot(dout, W2.T), a2_cache)
+    dX, dW1, dB1 = affine_relu_backward(np.dot(dout, W2.T), a1_cache)
     dW1 += self.reg * W1
 
     grads = {}
