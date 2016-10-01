@@ -19,7 +19,7 @@ def affine_forward(x, w, b):
   - out: output, of shape (N, M)
   - cache: (x, w, b)
   """
-  out = np.dot(x.reshape((x.shape[0], -1)), w) + b
+  out = np.dot(x.reshape(x.shape[0], -1), w) + b
   cache = (x, w, b)
   return out, cache
 
