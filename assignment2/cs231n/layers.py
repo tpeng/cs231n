@@ -266,27 +266,14 @@ def dropout_forward(x, dropout_param):
   if 'seed' in dropout_param:
     np.random.seed(dropout_param['seed'])
 
-  mask = None
-  out = None
-
   if mode == 'train':
-    ###########################################################################
-    # TODO: Implement the training phase forward pass for inverted dropout.   #
-    # Store the dropout mask in the mask variable.                            #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                            END OF YOUR CODE                             #
-    ###########################################################################
+    mask = np.random.rand(*x.shape) < dropout_param['p'] 
+    out = x * mask
+    # mask = np.random.choice(x.shape[1], x.shape[1] * dropout_param['p'])
+    # out = x[:, mask]
   elif mode == 'test':
-    ###########################################################################
-    # TODO: Implement the test phase forward pass for inverted dropout.       #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                            END OF YOUR CODE                             #
-    ###########################################################################
-
+    out = x
+    mask = None
   cache = (dropout_param, mask)
   out = out.astype(x.dtype, copy=False)
 
@@ -303,18 +290,13 @@ def dropout_backward(dout, cache):
   """
   dropout_param, mask = cache
   mode = dropout_param['mode']
-  
-  dx = None
+
   if mode == 'train':
-    ###########################################################################
-    # TODO: Implement the training phase backward pass for inverted dropout.  #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                            END OF YOUR CODE                             #
-    ###########################################################################
+    # print 'dout.shape', dout.shape
+    # print 'mask.shape', mask.shape
+    dx = dout * mask
   elif mode == 'test':
-    dx = dout
+    dx = dout.copy()
   return dx
 
 

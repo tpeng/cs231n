@@ -151,6 +151,7 @@ class FullyConnectedNet(object):
     self.dtype = dtype
     self.params = {}
     self.cache = {}
+    self.dropout_cache = {}
 
     ############################################################################
     # TODO: Initialize the parameters of the network, storing all values in    #
@@ -238,9 +239,12 @@ class FullyConnectedNet(object):
           _input, 
           self.params['W%d' % layer_idx], 
           self.params['b%d' % layer_idx])
-      _input = out.copy()
-
       self.cache[layer_idx] = cache
+      if self.use_dropout:
+        _input, do_cache = dropout_forward(out, self.dropout_param)
+        self.dropout_cache[layer_idx] = do_cache
+      else:
+        _input = out.copy()
 
     if self.use_batchnorm:
       scores, cache = affine_batchnorm_forward(_input,
@@ -299,6 +303,8 @@ class FullyConnectedNet(object):
       # get the dout right before the last affine layer
       dout = np.dot(dout, self.params['W%d' % self.num_layers].T)
     for idx in range(self.num_layers-1, 0, -1):
+      if self.use_dropout:
+        dout = dropout_backward(dout, self.dropout_cache[idx])
       next_layer_idx = idx + 1
       if self.use_batchnorm:
         dout, _dw, _db, dgamma, dbeta = affine_batchnorm_relu_backward(dout, self.cache[idx])
