@@ -140,21 +140,21 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     # the momentum variable to update the running mean and running variance,    #
     # storing your result in the running_mean and running_var variables.        #
     #############################################################################
-    pass
-    #############################################################################
-    #                             END OF YOUR CODE                              #
-    #############################################################################
+    mu = np.sum(x, axis=0) / N
+    xmu = x - mu
+    sq = xmu ** 2
+    var = np.sum(sq, axis=0) / N
+    sqrtvar = np.sqrt(var)
+    ivar = 1 / sqrtvar
+    xhat = xmu * ivar
+    gammax = xhat * gamma
+    out = gammax + beta
+    running_mean = mu
+    running_var = var
+    cache = (gammax, xhat, ivar, sqrtvar, var, sq, xmu, mu, gamma, beta)
   elif mode == 'test':
-    #############################################################################
-    # TODO: Implement the test-time forward pass for batch normalization. Use   #
-    # the running mean and variance to normalize the incoming data, then scale  #
-    # and shift the normalized data using gamma and beta. Store the result in   #
-    # the out variable.                                                         #
-    #############################################################################
-    pass
-    #############################################################################
-    #                             END OF YOUR CODE                              #
-    #############################################################################
+    x = (x - running_mean) / np.sqrt(running_var)
+    out  = gamma * x + beta
   else:
     raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
 
@@ -182,16 +182,34 @@ def batchnorm_backward(dout, cache):
   - dgamma: Gradient with respect to scale parameter gamma, of shape (D,)
   - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
   """
-  dx, dgamma, dbeta = None, None, None
-  #############################################################################
-  # TODO: Implement the backward pass for batch normalization. Store the      #
-  # results in the dx, dgamma, and dbeta variables.                           #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  gammax, xhat, ivar, sqrtvar, var, sq, xmu, mu, gamma, beta = cache
+  N, D = dout.shape
 
+  dbeta = np.sum(dout, axis=0)
+  dgammax = dout
+ 
+  dgamma = np.sum(dgammax * xhat, axis=0)
+  dxhat = dgammax * gamma
+
+  dxmu = dxhat * ivar
+  # ivar is (D, )
+  divar = np.sum(dxhat * xmu, axis=0)
+
+  dsqrtvar = divar * (-1) / (sqrtvar ** 2)
+
+  dvar = dsqrtvar * 0.5 / (np.sqrt(var))
+
+  dsq = dvar * np.ones((N, D)) / N
+
+  dxmu2 = dsq * 2 * xmu
+
+  dx1 = dxmu2 + dxmu
+
+  dmu = - np.sum(dxmu + dxmu2, axis=0)
+
+  dx2 = dmu * np.ones((N, D)) / N
+
+  dx = dx1 + dx2
   return dx, dgamma, dbeta
 
 
