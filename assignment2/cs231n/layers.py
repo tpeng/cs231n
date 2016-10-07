@@ -357,14 +357,37 @@ def conv_backward_naive(dout, cache):
   - dw: Gradient with respect to w
   - db: Gradient with respect to b
   """
+  x, w, b, conv_param = cache
+  N, C, H, W = x.shape
+  F, _, HH, WW = w.shape
+
   dx, dw, db = None, None, None
-  #############################################################################
-  # TODO: Implement the convolutional backward pass.                          #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  x_pad = ((0, 0), (0, 0), (1, 1), (1, 1))
+  x2 = np.pad(x, x_pad, 'constant', constant_values=0)
+
+  stride = conv_param['stride']
+  H_ = 1 + (H + 2*conv_param['pad'] - HH) / stride
+  W_ = 1 + (W + 2*conv_param['pad'] - WW) / stride
+
+  db = np.sum(np.transpose(dout, (1, 0, 2, 3)).reshape(w.shape[0], -1), axis=1)
+  dw = np.zeros((F, C, HH, WW))
+  dx = np.zeros((N, C, H, W))
+  dx2 = np.zeros_like(x2)
+
+  for f in range(0, F):
+    for j in range(0, H_):
+      for i in range(0, W_):
+        for k in range(0, N):
+          region = x2[k, :, j*stride:j*stride+HH, i*stride:i*stride+WW]
+          dw[f, :, :, :] += dout[k, f, j, i] * region
+
+  for k in range(0, N):
+    for j in range(0, H_):
+      for i in range(0, W_):
+        v = np.dot(w.reshape(F, -1).T, dout[k, :, j, i]).reshape((C, HH, WW))
+        dx2[k, :, j*stride:j*stride+HH, i*stride:i*stride+WW] += v
+
+  dx = dx2[:, :, stride:-stride, stride:-stride]
   return dx, dw, db
 
 
