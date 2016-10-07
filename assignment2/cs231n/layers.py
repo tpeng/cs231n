@@ -406,14 +406,15 @@ def max_pool_forward_naive(x, pool_param):
   - out: Output data
   - cache: (x, pool_param)
   """
-  out = None
-  #############################################################################
-  # TODO: Implement the max pooling forward pass                              #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  N, C, H, W = x.shape
+  stride = pool_param['stride']
+  HH = H / stride
+  WW = W / stride
+
+  out = np.zeros((N, C, HH, WW))
+  for j in range(HH):
+    for i in range(WW):
+      out[:, :, j, i] = np.max(x[:, :, j*stride: j*stride + stride, i *stride: i*stride+stride], axis=(-1, -2))
   cache = (x, pool_param)
   return out, cache
 
@@ -429,14 +430,24 @@ def max_pool_backward_naive(dout, cache):
   Returns:
   - dx: Gradient with respect to x
   """
-  dx = None
-  #############################################################################
-  # TODO: Implement the max pooling backward pass                             #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  x, pool_param = cache
+  dx = np.zeros_like(x)
+  stride = pool_param['stride']
+  N, C, H, W = x.shape
+  HH = H / stride
+  WW = W / stride
+
+  out = np.zeros((N, C, HH, WW))
+  dx = np.zeros_like(x)
+
+  for k in range(N):
+    for f in range(C):
+      for j in range(HH):
+        for i in range(WW):
+          v = x[k, f, j*stride: j*stride + stride, i *stride: i*stride+stride]
+          _j, _i = np.unravel_index(np.argmax(v), v.shape)
+          dx[k, f, j *stride + _j, i*stride + _i] = dout[k, f, j, i]
+
   return dx
 
 
