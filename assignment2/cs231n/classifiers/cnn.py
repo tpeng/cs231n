@@ -37,25 +37,29 @@ class ThreeLayerConvNet(object):
     self.reg = reg
     self.dtype = dtype
     
-    ############################################################################
-    # TODO: Initialize weights and biases for the three-layer convolutional    #
-    # network. Weights should be initialized from a Gaussian with standard     #
-    # deviation equal to weight_scale; biases should be initialized to zero.   #
-    # All weights and biases should be stored in the dictionary self.params.   #
-    # Store weights and biases for the convolutional layer using the keys 'W1' #
-    # and 'b1'; use keys 'W2' and 'b2' for the weights and biases of the       #
-    # hidden affine layer, and keys 'W3' and 'b3' for the weights and biases   #
-    # of the output affine layer.                                              #
-    ############################################################################
-    self.params['W1'] = np.random.normal(0, weight_scale, num_filters * input_dim[0] * filter_size * filter_size).reshape((num_filters, \
-        input_dim[0], filter_size, filter_size))
+    # self.params['W1'] = np.random.normal(0, weight_scale, num_filters * input_dim[0] * filter_size * filter_size).reshape((num_filters, \
+    #     input_dim[0], filter_size, filter_size))
+    # self.params['W1'] = np.random.randn(num_filters, input_dim[0], filter_size ,filter_size) * np.sqrt(2.0 / (filter_size*filter_size*input_dim[0]))
+    # print np.sqrt(2.0/(filter_size*filter_size*input_dim[0]))
+    # self.params['W1'] = np.random.normal(0, np.sqrt(2.0/(filter_size*filter_size*input_dim[0])), num_filters * input_dim[0] * filter_size * filter_size).reshape((num_filters, \
+    #     input_dim[0], filter_size, filter_size))
+    self.params['W1'] = np.random.randn(num_filters, input_dim[0], filter_size, filter_size) * weight_scale
+    # self.params['W1'] = np.random.randn(num_filters, input_dim[0], filter_size ,filter_size) * np.sqrt(1.0 / (filter_size * filter_size * input_dim[0]))
     self.params['b1'] = np.zeros(num_filters)
 
+    # 2x2 max pool
     dim = num_filters * input_dim[1] / 2 * input_dim[2] / 2
-    self.params['W2'] = np.random.normal(0, weight_scale, dim * hidden_dim).reshape((dim, hidden_dim))
+    # self.params['W2'] = np.random.normal(0, np.sqrt(2.0/dim), dim * hidden_dim).reshape(dim, hidden_dim)
+    # self.params['W2'] = np.random.normal(0, weight_scale, dim * hidden_dim).reshape(dim, hidden_dim)
+    # self.params['W2'] = np.random.randn(dim, hidden_dim) * np.sqrt(2.0 / dim)
+    self.params['W2'] = np.random.randn(dim, hidden_dim) * weight_scale
     self.params['b2'] = np.zeros(hidden_dim)
 
-    self.params['W3'] = np.random.normal(0, weight_scale, hidden_dim * num_classes).reshape((hidden_dim, num_classes))
+    # self.params['W3'] = np.random.normal(0, weight_scale, hidden_dim * num_classes).reshape(hidden_dim, num_classes)
+    # self.params['W3'] = np.random.randn(hidden_dim, num_classes) / np.sqrt(hidden_dim)
+    # self.params['W3'] = np.random.randn(hidden_dim, num_classes) * np.sqrt(1.0 / hidden_dim)
+    # self.params['W3'] = np.random.normal(0, np.sqrt(2.0/hidden_dim), hidden_dim * num_classes).reshape(hidden_dim, num_classes)
+    self.params['W3'] = np.random.randn(hidden_dim, num_classes) * weight_scale
     self.params['b3'] = np.zeros(num_classes)
     
     for k, v in self.params.iteritems():
