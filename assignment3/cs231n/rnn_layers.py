@@ -26,17 +26,9 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
   - next_h: Next hidden state, of shape (N, H)
   - cache: Tuple of values needed for the backward pass.
   """
-  next_h, cache = None, None
-  ##############################################################################
-  # TODO: Implement a single forward step for the vanilla RNN. Store the next  #
-  # hidden state and any values you need for the backward pass in the next_h   #
-  # and cache variables respectively.                                          #
-  ##############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
-  return next_h, cache
+  v = np.dot(prev_h, Wh) + np.dot(x, Wx) + b
+  next_h = np.tanh(v)
+  return next_h, (x, Wx, Wh, prev_h, next_h)
 
 
 def rnn_step_backward(dnext_h, cache):
@@ -54,17 +46,17 @@ def rnn_step_backward(dnext_h, cache):
   - dWh: Gradients of hidden-to-hidden weights, of shape (H, H)
   - db: Gradients of bias vector, of shape (H,)
   """
-  dx, dprev_h, dWx, dWh, db = None, None, None, None, None
-  ##############################################################################
-  # TODO: Implement the backward pass for a single step of a vanilla RNN.      #
-  #                                                                            #
-  # HINT: For the tanh function, you can compute the local derivative in terms #
-  # of the output value from tanh.                                             #
-  ##############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
+  x, Wx, Wh, prev_h, next_h = cache
+  g = dnext_h * (1 - next_h ** 2)
+
+  dx = np.dot(g, Wx.T)
+  db = np.sum(g, axis=0)
+  dprev_h = np.dot(g, Wh.T)
+   # XXX: np.dot(g.T, prev_h)?
+  # print np.dot(g.T, prev_h)
+  # print np.dot(prev_h.T, g)
+  dWh = np.dot(prev_h.T, g)
+  dWx = np.dot(x.T, g)
   return dx, dprev_h, dWx, dWh, db
 
 
