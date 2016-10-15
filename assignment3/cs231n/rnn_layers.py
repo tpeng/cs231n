@@ -53,8 +53,6 @@ def rnn_step_backward(dnext_h, cache):
   db = np.sum(g, axis=0)
   dprev_h = np.dot(g, Wh.T)
    # XXX: np.dot(g.T, prev_h)?
-  # print np.dot(g.T, prev_h)
-  # print np.dot(prev_h.T, g)
   dWh = np.dot(prev_h.T, g)
   dWx = np.dot(x.T, g)
   return dx, dprev_h, dWx, dWh, db
@@ -78,16 +76,16 @@ def rnn_forward(x, h0, Wx, Wh, b):
   - h: Hidden states for the entire timeseries, of shape (N, T, H).
   - cache: Values needed in the backward pass
   """
-  h, cache = None, None
-  ##############################################################################
-  # TODO: Implement forward pass for a vanilla RNN running on a sequence of    #
-  # input data. You should use the rnn_step_forward function that you defined  #
-  # above.                                                                     #
-  ##############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
+  N, T, D = x.shape
+  H = h0.shape[1]
+  h = np.zeros((N, T, H))
+  cache = []
+
+  prev_h = h0
+  for t in range(T):
+    h[:, t, :], _cache = rnn_step_forward(x[:, t, :], prev_h, Wx, Wh, b)
+    prev_h = h[:, t, :]
+    cache.append(_cache)
   return h, cache
 
 
@@ -105,16 +103,27 @@ def rnn_backward(dh, cache):
   - dWh: Gradient of hidden-to-hidden weights, of shape (H, H)
   - db: Gradient of biases, of shape (H,)
   """
-  dx, dh0, dWx, dWh, db = None, None, None, None, None
-  ##############################################################################
-  # TODO: Implement the backward pass for a vanilla RNN running an entire      #
-  # sequence of data. You should use the rnn_step_backward function that you   #
-  # defined above.                                                             #
-  ##############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
+  N, T, H = dh.shape
+  D = cache[0][0].shape[-1]
+
+  dx = np.zeros((N, T, D))
+  dh0 = np.zeros((N, H))
+  dWx = np.zeros((D, H))
+  dWh = np.zeros((H, H))
+  db = np.zeros(H)
+
+  dhnext = np.zeros_like(dh0)
+
+  for t in reversed(range(T)):
+    dout = dh[:, t, :]
+    # dout += dhnext modify dout, which make the gradient check failed
+    _dx, _dprev_h, _dWx, _dWh, _db = rnn_step_backward(dout + dhnext, cache[t])
+    db += _db
+    dhnext = _dprev_h
+    dWh += _dWh
+    dWx += _dWx
+    dh0 = _dprev_h
+    dx[:, t, :] += _dx
   return dx, dh0, dWx, dWh, db
 
 
