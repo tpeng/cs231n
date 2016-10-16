@@ -142,17 +142,14 @@ def word_embedding_forward(x, W):
   - out: Array of shape (N, T, D) giving word vectors for all input words.
   - cache: Values needed for the backward pass
   """
-  out, cache = None, None
-  ##############################################################################
-  # TODO: Implement the forward pass for word embeddings.                      #
-  #                                                                            #
-  # HINT: This should be very simple.                                          #
-  ##############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
-  return out, cache
+  N, T = x.shape
+  V, D = W.shape
+  out = np.zeros((N, T, D))
+
+  for i in range(N):
+    for t in range(T):
+      out[i, t, :] = W[x[i, t], :]
+  return out, (x, W)
 
 
 def word_embedding_backward(dout, cache):
@@ -170,16 +167,14 @@ def word_embedding_backward(dout, cache):
   Returns:
   - dW: Gradient of word embedding matrix, of shape (V, D).
   """
-  dW = None
-  ##############################################################################
-  # TODO: Implement the backward pass for word embeddings.                     #
-  #                                                                            #
-  # HINT: Look up the function np.add.at                                       #
-  ##############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
+  x, W = cache
+  N, T, D = dout.shape
+  V = W.shape[0]
+  dW = np.zeros((V, D))
+  for i in range(N):
+    for t in range(T):
+      idx = x[i, t]
+      np.add.at(dW, idx, dout[i, t, :])
   return dW
 
 
