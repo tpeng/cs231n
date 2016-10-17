@@ -213,15 +213,16 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   - cache: Tuple of values needed for backward pass.
   """
   next_h, next_c, cache = None, None, None
-  #############################################################################
-  # TODO: Implement the forward pass for a single timestep of an LSTM.        #
-  # You may want to use the numerically stable sigmoid implementation above.  #
-  #############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
   
+  N, H = prev_h.shape
+  a = np.dot(prev_h, Wh) + np.dot(x, Wx) + b
+  input_gate = sigmoid(a[:, 0:H])
+  forget_gate = sigmoid(a[:, H:2*H])
+  output_gate = sigmoid(a[:, 2*H:3*H])
+  state_gate = forget_gate * prev_c + input_gate * np.tanh(a[:, 3*H:])
+  next_h = output_gate * np.tanh(state_gate)
+  next_c = state_gate
+
   return next_h, next_c, cache
 
 
