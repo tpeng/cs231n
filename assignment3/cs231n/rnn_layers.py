@@ -212,18 +212,17 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   - next_c: Next cell state, of shape (N, H)
   - cache: Tuple of values needed for backward pass.
   """
-  next_h, next_c, cache = None, None, None
-  
   N, H = prev_h.shape
   a = np.dot(prev_h, Wh) + np.dot(x, Wx) + b
-  input_gate = sigmoid(a[:, 0:H])
-  forget_gate = sigmoid(a[:, H:2*H])
-  output_gate = sigmoid(a[:, 2*H:3*H])
-  state_gate = forget_gate * prev_c + input_gate * np.tanh(a[:, 3*H:])
-  next_h = output_gate * np.tanh(state_gate)
-  next_c = state_gate
+  i_gate = sigmoid(a[:, 0:H])
+  f_gate = sigmoid(a[:, H:2*H])
+  o_gate = sigmoid(a[:, 2*H:3*H])
+  g_gate = np.tanh(a[:, 3*H:])
+  c_gate = f_gate * prev_c + i_gate * g_gate
+  next_h = o_gate * np.tanh(c_gate)
+  next_c = c_gate
 
-  return next_h, next_c, cache
+  return next_h, next_c, (i_gate, f_gate, o_gate, g_gate, c_gate, prev_c, Wh, Wx, x, prev_h)
 
 
 def lstm_step_backward(dnext_h, dnext_c, cache):
@@ -243,17 +242,53 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
   - dWh: Gradient of hidden-to-hidden weights, of shape (H, 4H)
   - db: Gradient of biases, of shape (4H,)
   """
-  dx, dh, dc, dWx, dWh, db = None, None, None, None, None, None
-  #############################################################################
-  # TODO: Implement the backward pass for a single timestep of an LSTM.       #
-  #                                                                           #
-  # HINT: For sigmoid and tanh you can compute local derivatives in terms of  #
-  # the output value from the nonlinearity.                                   #
-  #############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
+  i_gate, f_gate, o_gate, g_gate, c_gate, prev_c, Wh, Wx, x, prev_h = cache
+  N, H = dnext_h.shape
+
+  _doutput = dnext_h * np.tanh(c_gate)
+  _dcontext = dnext_c + dnext_h * o_gate * (1 - np.tanh(c_gate) ** 2)
+
+  _dinput = _dcontext * g_gate
+  _dforget = _dcontext * prev_c
+  _dg = _dcontext * i_gate
+  dprev_c = _dcontext * f_gate
+
+  # i, f, o, g
+  z_i = _dinput * i_gate * (1 - i_gate)
+  z_f = _dforget * f_gate * (1 - f_gate)
+  z_o = _doutput * o_gate * (1 - o_gate)
+  z_g = _dg * (1 - g_gate ** 2)
+
+  dx =  np.dot(z_i, Wx[:, :H].T) + \
+        np.dot(z_f, Wx[:, H:2*H].T) + \
+        np.dot(z_o, Wx[:, 2*H:3*H].T) + \
+        np.dot(z_g, Wx[:, 3*H:].T)
+
+  dprev_h = np.dot(z_i, Wh[:, :H].T) + \
+            np.dot(z_f, Wh[:, H:2*H].T) + \
+            np.dot(z_o, Wh[:, 2*H:3*H].T) + \
+            np.dot(z_g, Wh[:, 3*H:].T)
+
+  db = np.hstack([
+    np.sum(z_i, axis=0),
+    np.sum(z_f, axis=0),
+    np.sum(z_o, axis=0),
+    np.sum(z_g, axis=0),
+  ])
+
+  dWx = np.hstack([
+    np.dot(x.T, z_i),
+    np.dot(x.T, z_f),
+    np.dot(x.T, z_o),
+    np.dot(x.T, z_g)
+  ])
+
+  dWh = np.hstack([
+    np.dot(prev_h.T, z_i),
+    np.dot(prev_h.T, z_f),
+    np.dot(prev_h.T, z_o),
+    np.dot(prev_h.T, z_g)
+  ])
 
   return dx, dprev_h, dprev_c, dWx, dWh, db
 
