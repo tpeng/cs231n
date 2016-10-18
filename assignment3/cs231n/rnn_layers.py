@@ -259,36 +259,14 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
   z_o = _doutput * o_gate * (1 - o_gate)
   z_g = _dg * (1 - g_gate ** 2)
 
-  dx =  np.dot(z_i, Wx[:, :H].T) + \
-        np.dot(z_f, Wx[:, H:2*H].T) + \
-        np.dot(z_o, Wx[:, 2*H:3*H].T) + \
-        np.dot(z_g, Wx[:, 3*H:].T)
+  # (N, 4*H)
+  z = np.hstack([z_i, z_f, z_o, z_g])
 
-  dprev_h = np.dot(z_i, Wh[:, :H].T) + \
-            np.dot(z_f, Wh[:, H:2*H].T) + \
-            np.dot(z_o, Wh[:, 2*H:3*H].T) + \
-            np.dot(z_g, Wh[:, 3*H:].T)
-
-  db = np.hstack([
-    np.sum(z_i, axis=0),
-    np.sum(z_f, axis=0),
-    np.sum(z_o, axis=0),
-    np.sum(z_g, axis=0),
-  ])
-
-  dWx = np.hstack([
-    np.dot(x.T, z_i),
-    np.dot(x.T, z_f),
-    np.dot(x.T, z_o),
-    np.dot(x.T, z_g)
-  ])
-
-  dWh = np.hstack([
-    np.dot(prev_h.T, z_i),
-    np.dot(prev_h.T, z_f),
-    np.dot(prev_h.T, z_o),
-    np.dot(prev_h.T, z_g)
-  ])
+  dx = np.dot(z, Wx.T)
+  dprev_h = np.dot(z, Wh.T)
+  db = np.sum(z, axis=0)
+  dWx = np.dot(x.T, z)
+  dWh = np.dot(prev_h.T, z)
 
   return dx, dprev_h, dprev_c, dWx, dWh, db
 
